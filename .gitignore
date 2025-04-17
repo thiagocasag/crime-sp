@@ -1,0 +1,17 @@
+# Ignorar CSVs gigantes
+*.csv
+data/raw/
+
+# Ignorar cache de Python
+__pycache__/
+*.pyc
+
+# Checkpoints de notebook
+.ipynb_checkpoints/
+
+# Ambiente virtual
+venv/
+.env
+
+# Lixos invisíveis
+.DS_Store
