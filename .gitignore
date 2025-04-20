@@ -10,8 +10,7 @@ __pycache__/
 .ipynb_checkpoints/
 
 # Ambiente virtual
-venv/
-.env
+crime-env/
 
 # Lixos invisíveis
 .DS_Store
