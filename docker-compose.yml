@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: crimesp_db
+    restart: always
+    environment:
+      POSTGRES_DB: crimesp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  etl:
+    build: .
+    container_name: crimesp_etl
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/crimesp
+
+volumes:
+  pgdata:

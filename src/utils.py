@@ -8,6 +8,8 @@ import geopandas as gpd
 import folium
 from folium.plugins import HeatMap
 
+
+
 def pre_processamento(palavra):
 
     nova_palavra = palavra
@@ -91,39 +93,87 @@ def categorizacao_horario(horario):
         return 'Noite'
 
 
-
-def importacao(path):
-    #IMPORTA TODOS OS DATAFRAMES DE BO'S:
-
-    df_dicio = {}
-
-    directory = os.listdir(path)
-
-    for file in directory:
-        if file != 'auxiliar':
-            if file.startswith('RDO'):
-                nome_filev = file
-                df_v = pd.read_csv(path + '/' + nome_filev)
-                nome_key = file[:-4]
-                df_dicio[nome_key] = df_v
+def dropa_coluna_vazia(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove colunas cujo nome é vazio, só espaços ou do tipo 'Unnamed: 0', 'Unnamed: 1', etc.
+    """
+    empty_name = df.columns.str.strip() == ""                 # nomes vazios
+    unnamed    = df.columns.str.match(r"^Unnamed:\s*\d+$")    # Unnamed: N
+    mask = empty_name | unnamed
+    return df.loc[:, ~mask]      # mantém apenas as que NÃO estão no mask
 
 
-            elif file[:-4][-1] == '1':        #para os files que representam 1o semestres:
-                for file2 in directory:
-                    if (file != file2) and (file[:-5] == file2[:-5]):       #encontrando o 2o semestre do ano em questao:
-                        nome_file1 = file
-                        nome_file2 = file2
-                        df1 = pd.read_csv(path + '/' + nome_file1)
-                        df2 = pd.read_csv(path + '/' + nome_file2)
 
-                        nome_key = file[:-6]
 
-                        df_dicio[nome_key] = pd.concat([df1 ,df2], ignore_index=True)   #juntando os dois semestres.
+def tratamento(df: pd.DataFrame) -> pd.DataFrame:
+    # Cria uma cópia do DataFrame para evitar o warning "SettingWithCopy"
+    df = df.copy()
 
-            elif (file[:-4][-1] != '1') and (file[:-4][-1] != '2'):       #para os files que nao sao subdivididos em 2 semestres:
-                nome_file = file
-                df = pd.read_csv(path + '/' + nome_file)
-                nome_key = file[:-4]
-                df_dicio[nome_key] = df
+    # Converte todas as colunas do tipo object para string explicitamente.
+    # Isso evita erros ao salvar como Parquet, onde o pyarrow exige consistência de tipos.
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].astype(str)
 
-    return df_dicio
+    # Remove colunas vazias ou irrelevantes como 'Unnamed: 0', espaços em branco, etc.
+    df = dropa_coluna_vazia(df)
+
+    # Aplica pré-processamento de texto nas colunas do tipo string (uppercase, acento, etc.)
+    for col in df.select_dtypes(include='object').columns:
+        df[col] = df[col].apply(pre_processamento)
+
+    # Corrige nomes específicos de cidades, se a coluna 'CIDADE' estiver presente
+    if 'CIDADE' in df.columns:
+        df['CIDADE'] = df['CIDADE'].apply(corrigir_cidade)
+
+    # Se existir a coluna 'HORARIO', corrige o formato e categoriza o período do dia
+    col_hora = next((col for col in ['HORARIO'] if col in df.columns), None)
+    if col_hora:
+        # Corrige o horário no formato HH:MM
+        df['HORA_FORMATADA'] = df[col_hora].apply(correcao_horario)
+
+        # Converte para datetime, com tratamento de erros
+        df['HORA_FORMATADA'] = pd.to_datetime(df['HORA_FORMATADA'], format='%H:%M', errors='coerce')
+
+        # Cria uma nova coluna categorizando o horário como Manhã, Tarde, etc.
+        df['PERIODO'] = df['HORA_FORMATADA'].apply(categorizacao_horario)
+
+    # Retorna o DataFrame tratado
+    return df
+
+
+# def importacao(path):
+#     #IMPORTA TODOS OS DATAFRAMES DE BO'S:
+
+#     df_dicio = {}
+
+#     directory = os.listdir(path)
+
+#     for file in directory:
+#         if file != 'auxiliar':
+#             if file.startswith('RDO'):
+#                 nome_filev = file
+#                 df_v = pd.read_csv(path + '/' + nome_filev)
+#                 nome_key = file[:-4]
+#                 df_dicio[nome_key] = df_v
+
+
+#             elif file[:-4][-1] == '1':        #para os files que representam 1o semestres:
+#                 for file2 in directory:
+#                     if (file != file2) and (file[:-5] == file2[:-5]):       #encontrando o 2o semestre do ano em questao:
+#                         nome_file1 = file
+#                         nome_file2 = file2
+#                         df1 = pd.read_csv(path + '/' + nome_file1)
+#                         df2 = pd.read_csv(path + '/' + nome_file2)
+
+#                         nome_key = file[:-6]
+
+#                         df_dicio[nome_key] = pd.concat([df1 ,df2], ignore_index=True)   #juntando os dois semestres.
+
+#             elif (file[:-4][-1] != '1') and (file[:-4][-1] != '2'):       #para os files que nao sao subdivididos em 2 semestres:
+#                 nome_file = file
+#                 df = pd.read_csv(path + '/' + nome_file)
+#                 nome_key = file[:-4]
+#                 df_dicio[nome_key] = df
+
+#     return df_dicio

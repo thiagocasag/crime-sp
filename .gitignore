@@ -1,16 +1,52 @@
-# Ignorar CSVs gigantes
+# ─── Dados brutos e processados ───────────────────────────
+# Ignora CSVs e Parquets pesados e pastas de dados
 *.csv
+*.parquet
 data/raw/
+data/processed/
 
-# Ignorar cache de Python
+# ─── Caches e artefatos Python ───────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Checkpoints de notebook
+# ─── Notebooks Jupyter ────────────────────────────────────
 .ipynb_checkpoints/
 
-# Ambiente virtual
+# ─── Ambientes virtuais ──────────────────────────────────
 crime-env/
+venv/
+env/
+.venv/
 
-# Lixos invisíveis
+# ─── Variáveis de ambiente e segredos ────────────────────
+.env
+*.env
+
+# ─── Logs e relatórios de cobertura ──────────────────────
+*.log
+logs/
+.coverage
+htmlcov/
+
+# ─── Build, dist e egg-info ──────────────────────────────
+build/
+dist/
+*.egg-info/
+
+# ─── IDEs e editores ──────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ─── Arquivos de sistema ──────────────────────────────────
 .DS_Store
+Thumbs.db
+
+# ─── Banco SQLite (caso use local) ───────────────────────
+*.db
+*.sqlite3
+
+# ─── Docker Compose overrides ─────────────────────────────
+docker-compose.override.yml
